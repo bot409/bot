@@ -6,6 +6,7 @@
   try {
     if (localStorage.getItem('feed_access_granted_v1') === '1') {
       document.documentElement.classList.add('access-granted');
+      document.title = 'פיד חדשות';
     }
   } catch (e) {}
 </script>
@@ -17,7 +18,7 @@
   });
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>פיד חדשות</title>
+<title>כניסה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;500;600;700;800&family=Heebo:wght@300;400;500;700;900&family=Noto+Serif+Hebrew:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1193,6 +1194,7 @@ const ACCESS_STORAGE_KEY = "feed_access_granted_v1";
 function grantAccess() {
   try { localStorage.setItem(ACCESS_STORAGE_KEY, '1'); } catch (e) {}
   document.documentElement.classList.add('access-granted');
+  document.title = 'פיד חדשות';
   init();
 }
 
@@ -1253,9 +1255,9 @@ function initAccessGate() {
     if (data.status === 'ok') {
       grantAccess();
     } else if (data.status === 'burned') {
-      setAccessError('הסיסמה הזו כבר נוצלה במקום אחר. פנה/י למנהל המערכת.');
+      setAccessError('סיסמה זו נחסמה');
     } else {
-      setAccessError('סיסמה שגויה, נסה/י שוב');
+      setAccessError('סיסמה שגויה');
       input.value = '';
       input.focus();
     }
