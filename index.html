@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+  try {
+    if (localStorage.getItem('feed_access_granted_v1') === '1') {
+      document.documentElement.classList.add('access-granted');
+    }
+  } catch (e) {}
+</script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.initializeCoreSettings === 'function') {
+      window.initializeCoreSettings();
+    }
+  });
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>פיד חדשות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;500;600;700;800&family=Heebo:wght@300;400;500;700;900&family=Noto+Serif+Hebrew:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Crect width='24' height='24' rx='6' fill='%231a1a2e'/%3E%3Cpath d='M4 11a9 9 0 0 1 9 9'/%3E%3Cpath d='M4 4a16 16 0 0 1 16 16'/%3E%3Ccircle cx='5' cy='19' r='1' fill='white' stroke='none'/%3E%3C/svg%3E">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-anchor: none; }
+
+:root {
+  --bg: #f0f2f5;
+  --card-bg: #ffffff;
+  --header-bg: #0a0a0f;
+  --text: #0d0d12;
+  --muted: #8892a4;
+  --border: #e2e6ef;
+  --channel-color: #0052e0;
+  --accent: #0052e0;
+  --accent-soft: #dce8ff;
+  --accent-glow: rgba(0,82,224,0.12);
+  --signature-bg: #f6f8fc;
+  --action-hover: #f0f2f8;
+  --shadow-card: 0 1px 3px rgba(13,13,40,.04), 0 4px 16px rgba(13,13,40,.06);
+  --shadow-hover: 0 8px 32px rgba(13,13,40,.12), 0 2px 8px rgba(0,82,224,.08);
+  --radius: 16px;
+  --font-body: 'Heebo', 'Noto Sans Hebrew', sans-serif;
+  --font-display: 'Heebo', sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,82,224,0.05) 0%, transparent 60%);
+}
+
+/* ── APP CONTENT VISIBILITY (prevents any flash) ── */
+#app-content { display: none; }
+html.access-granted #app-content { display: block; }
+html.access-granted #access-gate { display: none; }
+
+/* ── ACCESS GATE ── */
+#access-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(0,82,224,.10) 0%, transparent 55%), var(--bg);
+  padding: 20px;
+}
+#access-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 36px 28px 30px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(13,13,40,.05), 0 20px 50px rgba(13,13,40,.14);
+  border: 1px solid var(--border);
+}
+#access-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(155deg, #2a6bff 0%, #0052e0 55%, #003db0 100%);
+  box-shadow:
+    0 10px 24px rgba(0,82,224,.35),
+    inset 0 1px 1px rgba(255,255,255,.5),
+    inset 0 -6px 10px rgba(0,20,80,.35);
+  transform: perspective(200px) rotateX(4deg);
+}
+#access-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  margin-bottom: 8px;
+}
+#access-sub {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+#access-form { display: flex; flex-direction: column; gap: 10px; }
+#access-input {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  font-size: 15px;
+  font-family: var(--font-body);
+  text-align: center;
+  letter-spacing: 1px;
+  background: var(--signature-bg);
+  color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+}
+#access-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+  background: #fff;
+}
+#access-input.shake { animation: access-shake .4s; border-color: #dc2626; }
+@keyframes access-shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-6px); }
+  40%,80% { transform: translateX(6px); }
+}
+#access-error {
+  font-size: 12.5px;
+  color: #dc2626;
+  font-weight: 600;
+  min-height: 16px;
+  display: none;
+}
+#access-error.show { display: block; }
+#access-submit {
+  margin-top: 4px;
+  padding: 13px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px var(--accent-glow);
+  transition: filter .15s, transform .1s;
+}
+#access-submit:hover { filter: brightness(1.08); }
+#access-submit:active { transform: scale(.98); }
+#access-submit:disabled { opacity: .7; cursor: default; }
+#access-spinner {
+  display: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  animation: access-spin .7s linear infinite;
+}
+#access-submit.loading #access-spinner { display: inline-block; }
+#access-submit.loading #access-submit-text { display: none; }
+@keyframes access-spin { to { transform: rotate(360deg); } }
+
+/* ── HEADER ── */
+#header {
+  background: var(--header-bg);
+  color: #fff;
+  padding: 0 28px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 8px 32px rgba(0,0,0,.4);
+}
+#header-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+#header-title svg { opacity: .5; }
+#header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  padding: 5px 14px 5px 10px;
+}
+#status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+  transition: background .3s;
+}
+#status-dot.pulse { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,.4); }
+  50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+}
+#status-text { font-size: 11.5px; opacity: .55; font-weight: 500; letter-spacing: .1px; }
+
+/* ── FILTER BAR ── */
+#filter-bar {
+  background: rgba(255,255,255,.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  position: sticky;
+  top: 35px;
+  z-index: 90;
+}
+#filter-bar-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+.filter-chip {
+  padding: 5px 15px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--muted);
+  font-family: var(--font-body);
+  line-height: 1;
+  letter-spacing: -.1px;
+}
+.filter-chip:hover { background: var(--signature-bg); border-color: #c8d4e8; color: var(--text); }
+.filter-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+.filter-chip-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.filter-chip-video:hover {
+  background: #fff1f1;
+  border-color: #f87171;
+  color: #dc2626;
+}
+.filter-chip-video.active {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  box-shadow: 0 2px 8px rgba(220,38,38,.25);
+}
+
+/* ── FEED ── */
+#feed {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 20px 14px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-anchor: none;
+}
+
+/* ── DATE DIVIDER ── */
+.date-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+}
+.date-divider::before,.date-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+}
+
+/* ── MESSAGE CARD ── */
+.msg-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+}
+
+/* Avatar — large, on the right */
+.msg-avatar-col {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 22px;
+}
+.msg-avatar-col .avatar,
+.msg-avatar-col .avatar-placeholder {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.msg-avatar-col .avatar {
+  border: 1.5px solid var(--border);
+  object-fit: cover;
+  display: block;
+}
+.msg-avatar-col .avatar-placeholder {
+  background: linear-gradient(145deg, #0052e0, #003db0);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  letter-spacing: -.5px;
+  box-shadow: 0 2px 8px rgba(0,82,224,.22);
+}
+
+/* Right col: meta + bubble stacked tightly */
+.msg-main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Meta row: name + time — tight above the bubble */
+.msg-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 3px;
+}
+.msg-channel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -.2px;
+}
+.msg-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: .1px;
+}
+
+/* Bubble */
+.msg-bubble {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px 16px 10px;
+  transition: box-shadow .2s, transform .18s, border-color .18s;
+  box-shadow: var(--shadow-card);
+}
+.msg-card:hover .msg-bubble {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+  border-color: #d0dbf0;
+}
+
+/* Legacy — hidden */
+.avatar-wrap { display: none; }
+.avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border); display: block; }
+.avatar-placeholder { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(145deg,#0052e0,#003db0); color:#fff; font-size:16px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:var(--font-display); }
+.msg-body { flex: 1; min-width: 0; }
+.msg-header { display: none; }
+
+/* Main text */
+.msg-text {
+  font-size: 17px;
+  line-height: 1.625;
+  color: #1a1d27;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: 400;
+  letter-spacing: -.1px;
+  font-family: 'Inter', 'Noto Sans Hebrew', sans-serif;
+}
+
+/* Signature detection — last line(s) if repeated */
+.msg-signature {
+  display: block;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Image */
+.msg-image {
+  margin-top: 10px;
+  border-radius: 10px;
+  max-width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+  border: 1px solid var(--border);
+  transition: opacity .2s;
+}
+.msg-image:hover { opacity: .93; }
+
+/* File */
+.msg-file {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--signature-bg);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  text-decoration: none;
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  transition: background .15s;
+}
+.msg-file:hover { background: #eee; }
+
+/* Drive video embed */
+.msg-drive-video {
+  margin-top: 10px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #000;
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+.msg-drive-video iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+.msg-drive-open {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity .2s;
+  white-space: nowrap;
+  z-index: 2;
+}
+.msg-drive-video:hover .msg-drive-open { opacity: 1; }
+
+/* Telegram link */
+.msg-tg-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color .15s;
+}
+.msg-tg-link:hover { color: var(--accent); }
+
+/* ── ACTION BUTTONS ── */
+.msg-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.action-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--signature-bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.action-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: rgba(0,82,224,.25);
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+.action-btn.copied {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+/* Tooltip */
+.action-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  right: 50%;
+  transform: translateX(50%);
+  background: #0a0a0f;
+  color: #fff;
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+  z-index: 10;
+}
+.action-btn:hover::after { opacity: 1; }
+
+/* ── LOADING ── */
+#loading {
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 2.5px solid #e2e6ef;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#empty {
+  display: none;
+  text-align: center;
+  padding: 70px 20px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* ── NEW MESSAGES state on scroll-bottom-btn ── */
+#scroll-bottom-btn.has-new {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(0,82,224,.4);
+}
+#scroll-bottom-btn.has-new:hover {
+  background: #0046cc;
+  border-color: #0046cc;
+}
+
+/* ── SCROLL TO BOTTOM ── */
+#scroll-bottom-btn {
+  display: none;
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  z-index: 80;
+  box-shadow: 0 4px 20px rgba(13,13,40,.12);
+  white-space: nowrap;
+  align-items: center;
+  gap: 7px;
+  transition: all .15s;
+}
+#scroll-bottom-btn.visible { display: flex; }
+#scroll-bottom-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(0,82,224,.3);
+}
+
+/* ── LIGHTBOX ── */
+#lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,15,.94);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  backdrop-filter: blur(8px);
+}
+#lightbox.open { display: flex; }
+#lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+}
+
+/* ── TOAST ── */
+#toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #0a0a0f;
+  color: #fff;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: all .25s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 200;
+  letter-spacing: -.1px;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+/* ── HIGHLIGHTED MESSAGE (deep-link) ── */
+.msg-card.msg-highlight .msg-bubble {
+  border: 2.5px solid var(--accent) !important;
+  box-shadow: 0 0 0 4px rgba(0,82,224,.15), 0 8px 32px rgba(0,82,224,.18) !important;
+  animation: highlightFade 4s ease forwards;
+}
+@keyframes highlightFade {
+  0%,50% { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,82,224,.15), 0 8px 32px rgba(0,82,224,.18); }
+  100%   { border-color: var(--border); box-shadow: var(--shadow-card); }
+}
+</style>
+<body>
+
+<div id="access-gate">
+  <div id="access-card">
+    <div id="access-icon">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+        <rect x="4" y="10.5" width="16" height="10" rx="2.5"/>
+        <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5"/>
+        <circle cx="12" cy="15.2" r="1.6" fill="#fff" stroke="none"/>
+      </svg>
+    </div>
+    <h1 id="access-title">הזן סיסמה</h1>
+    <p id="access-sub">נא הזן/י את סיסמת הגישה שקיבלת ממנהל האתר.</p>
+    <form id="access-form" autocomplete="off">
+      <input id="access-input" type="password" placeholder="סיסמת גישה" autocomplete="off" />
+      <div id="access-error"></div>
+      <button id="access-submit" type="submit">
+        <span id="access-submit-text">כניסה</span>
+        <span id="access-spinner"></span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<div id="app-content">
+
+<div id="header">
+  <div id="header-title">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1" fill="currentColor"/>
+    </svg>
+    פיד חדשות
+  </div>
+  <div id="header-right">
+    <div id="status-pill">
+      <span id="status-dot" class="pulse"></span>
+      <span id="status-text">טוען...</span>
+    </div>
+  </div>
+</div>
+
+<div id="filter-bar">
+  <span id="filter-bar-label">ערוץ</span>
+  <button class="filter-chip active" data-channel="all" onclick="filterChannel('all', this)">הכל</button>
+  <button class="filter-chip filter-chip-video" data-channel="__video__" onclick="filterChannel('__video__', this)">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-1px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    וידאו
+  </button>
+</div>
+
+<div id="feed">
+  <div id="loading">
+    <div class="spinner"></div>
+    טוען הודעות...
+  </div>
+  <div id="empty">אין הודעות להצגה</div>
+</div>
+
+<button id="scroll-bottom-btn" onclick="scrollToBottom()">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+  גלול למטה
+</button>
+
+<div id="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div id="toast"></div>
+
+</div><!-- /#app-content -->
+
+<script>
+// מנע שחזור גלילה אוטומטי של הדפדפן — אנחנו שולטים בזה
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+window.google = window.google || {};
+window.google.visualization = window.google.visualization || {};
+window.google.visualization.Query = window.google.visualization.Query || {
+  setResponse: function(json) { if (window._cb) window._cb(json); }
+};
+
+const SPREADSHEET_ID = '1aIvkC-aSOyoZJ-W9FKpvklKSLi3AQdwDU3GuybzotHk';
+const POLL_INTERVAL = 30000;
+const MESSAGES_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Messages&tqx=responseHandler:_cb`;
+const PROFILES_URL  = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Profiles&tqx=responseHandler:_cb`;
+
+let profiles = {};
+let allMessages = [];
+let activeChannel = 'all';
+let firstLoad = true;
+let lastMessageCount = 0;
+let isUserScrolledUp = false;
+let scrollTimer = null;
+
+// Detect if user is scrolled up (not at bottom)
+function checkScroll() {
+  const atBottom = window.scrollY >= document.body.scrollHeight - window.innerHeight - 80;
+  const btn = document.getElementById('scroll-bottom-btn');
+  if (!atBottom) {
+    btn.classList.add('visible');
+    isUserScrolledUp = true;
+  } else {
+    btn.classList.remove('visible');
+    isUserScrolledUp = false;
+    // Clear new-messages state when user reaches bottom
+    clearNewBanner();
+  }
+}
+
+// ── Profiles ──
+function loadProfiles() {
+  return new Promise(resolve => {
+    const old = document.getElementById('_gviz_profiles');
+    if (old) old.remove();
+    window._cb = function(json) {
+      try {
+        (json.table.rows || []).forEach(row => {
+          const name = row.c[0]?.v?.trim();
+          const url  = row.c[1]?.v?.trim();
+          if (name && url) profiles[name] = url;
+        });
+      } catch(e) {}
+      resolve();
+    };
+    const s = document.createElement('script');
+    s.id = '_gviz_profiles';
+    s.src = PROFILES_URL + '&_=' + Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+// ── Fetch ──
+function fetchMessages() {
+  const old = document.getElementById('_gviz_messages');
+  if (old) old.remove();
+  window._cb = function(json) {
+    try {
+      const rows = json.table.rows || [];
+      const msgs = rows.map(row => ({
+        runTime:  row.c[0]?.v || '',
+        channel:  (row.c[1]?.v || '').trim(),
+        postTime: row.c[2]?.v || '',
+        text:     row.c[3]?.v || '',
+        imageUrl: row.c[4]?.v || '',
+        driveUrl: row.c[5]?.v || '',
+        tgUrl:    row.c[6]?.v || '',
+      })).filter(m => m.text || m.imageUrl || m.driveUrl);
+
+      const newCount = msgs.length;
+      const newMsgCount = newCount - lastMessageCount;
+      const hadNew = newMsgCount > 0 && !firstLoad;
+
+      allMessages = msgs;
+      updateFilterBar();
+
+      if (firstLoad) {
+        renderFeed(true);
+        firstLoad = false;
+        lastMessageCount = newCount;
+        setStatus('מחובר ✓', true);
+      } else if (hadNew) {
+        // FIX: always append new messages smoothly without full re-render
+        appendNewMessages(newMsgCount);
+        lastMessageCount = newCount;
+
+        if (isUserScrolledUp) {
+          // User is reading old content — show banner
+          showNewBanner(newMsgCount);
+        } else {
+          // User is at bottom — silently scroll to keep them there
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+      }
+      setStatus('מחובר ✓', true);
+    } catch(e) {
+      setStatus('שגיאה בטעינה', false);
+    }
+  };
+  const s = document.createElement('script');
+  s.id = '_gviz_messages';
+  s.src = MESSAGES_URL + '&_=' + Date.now();
+  document.head.appendChild(s);
+}
+
+// FIX: append only the new tail messages — never touch existing DOM
+function appendNewMessages(count) {
+  const msgs = getFilteredMsgs();
+  if (!msgs.length || count <= 0) return;
+
+  buildChannelSignatures();
+
+  const feed = document.getElementById('feed');
+  const startIdx = msgs.length - count;
+  const endIdx = msgs.length - 1;
+
+  // Determine the date of the last currently-rendered card (to avoid duplicate divider)
+  let prevDate = null;
+  if (startIdx > 0) {
+    prevDate = getDateStr(msgs[startIdx - 1].postTime);
+  }
+
+  const frag = document.createDocumentFragment();
+  for (let i = startIdx; i <= endIdx; i++) {
+    const m = msgs[i];
+    const dateStr = getDateStr(m.postTime);
+    if (dateStr && dateStr !== prevDate) {
+      const div = document.createElement('div');
+      div.className = 'date-divider';
+      div.textContent = dateStr;
+      frag.appendChild(div);
+      prevDate = dateStr;
+    }
+    frag.appendChild(buildCard(msgs, i));
+  }
+  feed.appendChild(frag);
+
+  // Observe new iframes
+  frag.querySelectorAll && setupVideoObserver();
+  // Re-observe all unloaded iframes (safe — observer ignores already-observed)
+  document.querySelectorAll('iframe[data-src]').forEach(iframe => {
+    if (videoObserver) videoObserver.observe(iframe);
+  });
+}
+
+// ── Filter ──
+function updateFilterBar() {
+  const bar = document.getElementById('filter-bar');
+  const channels = [...new Set(allMessages.map(m => m.channel).filter(Boolean))];
+  const existing = new Set([...bar.querySelectorAll('.filter-chip')].map(b => b.dataset.channel));
+  channels.forEach(ch => {
+    if (existing.has(ch)) return;
+    const btn = document.createElement('button');
+    btn.className = 'filter-chip';
+    btn.dataset.channel = ch;
+    btn.textContent = ch;
+    btn.onclick = () => filterChannel(ch, btn);
+    bar.appendChild(btn);
+  });
+}
+
+function filterChannel(channel, btn) {
+  activeChannel = channel;
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFeed(true);
+}
+
+// ── Signature detection (frequency-based) ──
+const channelSigs = {};
+
+function buildChannelSignatures() {
+  const byChannel = {};
+  allMessages.forEach(m => {
+    if (!m.text || !m.channel) return;
+    if (!byChannel[m.channel]) byChannel[m.channel] = [];
+    byChannel[m.channel].push(m.text);
+  });
+
+  Object.entries(byChannel).forEach(([channel, texts]) => {
+    if (texts.length < 3) return;
+    const candidateCounts = {};
+    texts.forEach(text => {
+      const lines = text.split('\n');
+      const trailing = [];
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const l = lines[i].trim();
+        if (l) trailing.unshift(l);
+        if (trailing.length >= 6) break;
+      }
+      for (let len = 1; len <= trailing.length; len++) {
+        const seq = trailing.slice(trailing.length - len).join('\n');
+        candidateCounts[seq] = (candidateCounts[seq] || 0) + 1;
+      }
+    });
+
+    const sigs = new Set();
+    Object.entries(candidateCounts).forEach(([seq, count]) => {
+      if (count >= 3) sigs.add(seq);
+    });
+    if (sigs.size) channelSigs[channel] = sigs;
+  });
+}
+
+function stripChannelSig(text, channel) {
+  if (!text) return text;
+  const sigs = channelSigs[channel];
+  if (!sigs || !sigs.size) return text;
+
+  const lines = text.split('\n');
+  let bestCut = lines.length;
+  sigs.forEach(sig => {
+    const sigLines = sig.split('\n');
+    let li = lines.length - 1;
+    let si = sigLines.length - 1;
+    while (li >= 0 && si >= 0) {
+      if (lines[li].trim() === sigLines[si]) { li--; si--; }
+      else if (!lines[li].trim()) { li--; }
+      else break;
+    }
+    if (si < 0) {
+      const cut = li + 1;
+      if (cut < bestCut) bestCut = cut;
+    }
+  });
+
+  if (bestCut < lines.length && bestCut > 0) {
+    return lines.slice(0, bestCut).join('\n').trimEnd();
+  }
+  return text;
+}
+
+// ── Drive video embed ──
+function getDriveEmbedUrl(url) {
+  if (!url) return null;
+  let id = null;
+  const m1 = url.match(/\/file\/d\/([^/?#&]+)/);
+  if (m1) id = m1[1];
+  if (!id) {
+    const m2 = url.match(/[?&]id=([^&]+)/);
+    if (m2) id = m2[1];
+  }
+  return id ? `https://drive.google.com/file/d/${id}/preview` : null;
+}
+
+// ── Render (paginated, newest-last, loads more on scroll up) ──
+const PAGE_SIZE = 20;
+let renderedCount = 0;
+let isLoadingMore = false;
+let videoObserver = null;
+
+function getFilteredMsgs() {
+  if (activeChannel === 'all') return allMessages;
+  if (activeChannel === '__video__') return allMessages.filter(m => m.driveUrl);
+  return allMessages.filter(m => m.channel === activeChannel);
+}
+
+function buildCard(msgs, idx) {
+  const m = msgs[idx];
+  const card = document.createElement('div');
+  card.className = 'msg-card';
+
+  const msgId = msgToId(m);
+  card.id = 'msg-' + msgId;
+
+  const avatarUrl = profiles[m.channel];
+  let smallAvatarHtml;
+  if (avatarUrl) {
+    smallAvatarHtml = `<img class="avatar" src="${esc(avatarUrl)}" alt="${esc(m.channel)}"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="avatar-placeholder" style="display:none">${initials(m.channel)}</div>`;
+  } else {
+    smallAvatarHtml = `<div class="avatar-placeholder">${initials(m.channel)}</div>`;
+  }
+
+  const mainText = stripChannelSig(m.text, m.channel);
+
+  let bubbleHtml = '';
+  if (mainText) bubbleHtml += `<div class="msg-text">${esc(mainText)}</div>`;
+
+  if (m.imageUrl) {
+    bubbleHtml += `<img class="msg-image" src="${esc(m.imageUrl)}" alt="תמונה" loading="lazy" onclick="openLightbox(this.src)">`;
+  }
+
+  if (m.driveUrl) {
+    const embedUrl = getDriveEmbedUrl(m.driveUrl);
+    if (embedUrl) {
+      bubbleHtml += `<div class="msg-drive-video">
+        <iframe data-src="${esc(embedUrl)}" allowfullscreen allow="autoplay"></iframe>
+        <a class="msg-drive-open" href="${esc(m.driveUrl)}" target="_blank" rel="noopener">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          פתח בדרייב
+        </a>
+      </div>`;
+    } else {
+      bubbleHtml += `<a class="msg-file" href="${esc(m.driveUrl)}" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        קובץ מצורף
+      </a>`;
+    }
+  }
+
+  const copyPageLinkBtn = `<button class="action-btn" onclick="copyMsgLink(this, '${msgId}')" data-tooltip="העתק קישור להודעה">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  </button>`;
+
+  const openSourceBtn = m.tgUrl
+    ? `<button class="action-btn" onclick="openSource('${esc(m.tgUrl)}')" data-tooltip="פתח בטלגרם">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+      </button>`
+    : '';
+
+  const copyTextBtn = m.text
+    ? `<button class="action-btn copy-text-btn" data-idx="${idx}" data-tooltip="העתק טקסט">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>`
+    : '';
+
+  bubbleHtml += `<div class="msg-actions">${copyPageLinkBtn}${openSourceBtn}${copyTextBtn}</div>`;
+
+  card.innerHTML = `
+    <div class="msg-avatar-col">
+      ${smallAvatarHtml}
+    </div>
+    <div class="msg-main-col">
+      <div class="msg-meta">
+        <span class="msg-channel">${esc(m.channel)}</span>
+        <span class="msg-time">${formatTime(m.postTime)}</span>
+      </div>
+      <div class="msg-bubble">
+        <div class="msg-body">${bubbleHtml}</div>
+      </div>
+    </div>`;
+
+  const ctBtn = card.querySelector('.copy-text-btn');
+  if (ctBtn) {
+    ctBtn.addEventListener('click', function() {
+      copyText(this, msgs[parseInt(this.dataset.idx)]?.text || '');
+    });
+  }
+
+  return card;
+}
+
+function setupVideoObserver() {
+  if (!videoObserver) {
+    videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const iframe = entry.target;
+          if (iframe.dataset.src && !iframe.src) {
+            iframe.src = iframe.dataset.src;
+          }
+          videoObserver.unobserve(iframe);
+        }
+      });
+    }, { rootMargin: '200px' });
+  }
+
+  document.querySelectorAll('iframe[data-src]').forEach(iframe => {
+    videoObserver.observe(iframe);
+  });
+}
+
+function renderFeed(scrollAfter = false, preserveScroll = false) {
+  const feed = document.getElementById('feed');
+  document.getElementById('loading').style.display = 'none';
+
+  const msgs = getFilteredMsgs();
+
+  if (!msgs.length) {
+    document.getElementById('empty').style.display = 'block';
+    feed.querySelectorAll('.msg-card, .date-divider').forEach(el => el.remove());
+    renderedCount = 0;
+    return;
+  }
+  document.getElementById('empty').style.display = 'none';
+  buildChannelSignatures();
+
+  feed.querySelectorAll('.msg-card, .date-divider').forEach(el => el.remove());
+
+  renderedCount = Math.min(PAGE_SIZE, msgs.length);
+  const startIdx = msgs.length - renderedCount;
+
+  appendMsgsRange(feed, msgs, startIdx, msgs.length - 1, true);
+  setupVideoObserver();
+
+  const hash = window.location.hash;
+  const hasHashTarget = hash && hash.startsWith('#msg-');
+
+  if (scrollAfter) {
+    if (hasHashTarget) {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        setTimeout(scrollToLinkedMsg, 500);
+      });
+    } else {
+      requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
+    }
+  }
+}
+
+const ACCESS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwcjjlswMyiyzHU_FON4019dJWYTxA_mB6zZ9LlsBrpjj9Mx_zBzSwO69sOF-WB3h9zsQ/exec";
+const ACCESS_STORAGE_KEY = "feed_access_granted_v1";
+
+function grantAccess() {
+  try { localStorage.setItem(ACCESS_STORAGE_KEY, '1'); } catch (e) {}
+  document.documentElement.classList.add('access-granted');
+  init();
+}
+
+function setAccessError(msg) {
+  const errEl = document.getElementById('access-error');
+  const inputEl = document.getElementById('access-input');
+  if (msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('show');
+    inputEl.classList.remove('shake');
+    void inputEl.offsetWidth;
+    inputEl.classList.add('shake');
+  } else {
+    errEl.classList.remove('show');
+    errEl.textContent = '';
+  }
+}
+
+function setAccessLoading(isLoading) {
+  const btn = document.getElementById('access-submit');
+  const input = document.getElementById('access-input');
+  btn.classList.toggle('loading', isLoading);
+  btn.disabled = isLoading;
+  input.disabled = isLoading;
+}
+
+function initAccessGate() {
+  // אם כבר אומת בעבר, לא נוגעים בכלל בשער הכניסה
+  if (document.documentElement.classList.contains('access-granted')) {
+    init();
+    return;
+  }
+
+  const form = document.getElementById('access-form');
+  const input = document.getElementById('access-input');
+  input.focus();
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pwd = input.value.trim();
+    if (!pwd) { setAccessError('נא להזין סיסמה'); return; }
+
+    setAccessError(null);
+    setAccessLoading(true);
+
+    let data;
+    try {
+      const res = await fetch(ACCESS_SCRIPT_URL + '?key=' + encodeURIComponent(pwd));
+      data = await res.json();
+    } catch (err) {
+      setAccessLoading(false);
+      setAccessError('שגיאת תקשורת — נסה/י שוב בעוד רגע');
+      return;
+    }
+
+    setAccessLoading(false);
+
+    if (data.status === 'ok') {
+      grantAccess();
+    } else if (data.status === 'burned') {
+      setAccessError('הסיסמה הזו כבר נוצלה במקום אחר. פנה/י למנהל המערכת.');
+    } else {
+      setAccessError('סיסמה שגויה, נסה/י שוב');
+      input.value = '';
+      input.focus();
+    }
+  });
+}
+
+initAccessGate();
+
+// Prepend older messages when user scrolls to top
+function loadMoreMessages() {
+  if (isLoadingMore) return;
+  const msgs = getFilteredMsgs();
+  if (renderedCount >= msgs.length) return;
+
+  isLoadingMore = true;
+  const feed = document.getElementById('feed');
+
+  const anchor = feed.querySelector('.msg-card, .date-divider');
+  const anchorTop = anchor ? anchor.getBoundingClientRect().top : 0;
+
+  const toLoad = Math.min(PAGE_SIZE, msgs.length - renderedCount);
+  const endIdx = msgs.length - renderedCount - 1;
+  const startIdx = endIdx - toLoad + 1;
+
+  const frag = document.createDocumentFragment();
+  buildMsgsRange(msgs, startIdx, endIdx).forEach(n => frag.appendChild(n));
+
+  feed.insertBefore(frag, anchor);
+  renderedCount += toLoad;
+
+  if (anchor) {
+    const newAnchorTop = anchor.getBoundingClientRect().top;
+    window.scrollBy({ top: newAnchorTop - anchorTop, behavior: 'instant' });
+  }
+
+  setupVideoObserver();
+  isLoadingMore = false;
+}
+
+function buildMsgsRange(msgs, startIdx, endIdx) {
+  const nodes = [];
+  let prevDate = null;
+  if (endIdx + 1 < msgs.length) {
+    prevDate = getDateStr(msgs[endIdx + 1].postTime);
+  }
+
+  for (let i = startIdx; i <= endIdx; i++) {
+    const m = msgs[i];
+    const dateStr = getDateStr(m.postTime);
+    if (dateStr && dateStr !== prevDate) {
+      const div = document.createElement('div');
+      div.className = 'date-divider';
+      div.textContent = dateStr;
+      nodes.push(div);
+      prevDate = dateStr;
+    }
+    nodes.push(buildCard(msgs, i));
+  }
+  return nodes;
+}
+
+function appendMsgsRange(feed, msgs, startIdx, endIdx, clearDividers) {
+  const nodes = buildMsgsRange(msgs, startIdx, endIdx);
+  const frag = document.createDocumentFragment();
+  nodes.forEach(n => frag.appendChild(n));
+  feed.appendChild(frag);
+}
+
+// ── Scroll-up triggers load-more ──
+window.addEventListener('scroll', () => {
+  checkScroll();
+  if (window.scrollY < 300) loadMoreMessages();
+}, { passive: true });
+
+
+// ── Actions ──
+function msgToId(m) {
+  const raw = (m.channel || '') + '|' + (m.postTime || '');
+  let h = 0;
+  for (let i = 0; i < raw.length; i++) {
+    h = Math.imul(31, h) + raw.charCodeAt(i) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+function copyMsgLink(btn, msgId) {
+  const url = window.location.href.split('#')[0] + '#msg-' + msgId;
+  navigator.clipboard.writeText(url).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    showToast('קישור להודעה הועתק');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+    }, 2000);
+  });
+}
+
+function scrollToLinkedMsg() {
+  const hash = window.location.hash;
+  if (!hash || !hash.startsWith('#msg-')) return;
+
+  function doScroll(el) {
+    el.classList.remove('msg-highlight');
+    void el.offsetWidth;
+    el.classList.add('msg-highlight');
+    setTimeout(() => el.classList.remove('msg-highlight'), 4500);
+
+    let lastTop = -1;
+    let stableCount = 0;
+    function waitStable() {
+      const currentTop = el.getBoundingClientRect().top + window.scrollY;
+      if (Math.abs(currentTop - lastTop) < 2) {
+        stableCount++;
+      } else {
+        stableCount = 0;
+      }
+      lastTop = currentTop;
+      if (stableCount >= 3) {
+        el.scrollIntoView({ behavior: 'instant', block: 'center' });
+      } else {
+        requestAnimationFrame(waitStable);
+      }
+    }
+    requestAnimationFrame(waitStable);
+  }
+
+  function findAndScroll() {
+    const el = document.querySelector(hash);
+    if (el) {
+      doScroll(el);
+      return;
+    }
+    let attempts = 0;
+    function tryLoad() {
+      loadMoreMessages();
+      setTimeout(() => {
+        const found = document.querySelector(hash);
+        if (found) {
+          doScroll(found);
+        } else if (++attempts < 15) {
+          tryLoad();
+        }
+      }, 150);
+    }
+    tryLoad();
+  }
+
+  findAndScroll();
+}
+function openSource(url) { window.open(url, '_blank', 'noopener'); }
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+    showToast('הטקסט הועתק');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+    }, 2000);
+  });
+}
+
+function showNewBanner(count) {
+  const btn = document.getElementById('scroll-bottom-btn');
+  btn.classList.add('visible', 'has-new');
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> ${count} הודעות חדשות`;
+}
+function clearNewBanner() {
+  const btn = document.getElementById('scroll-bottom-btn');
+  btn.classList.remove('has-new');
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg> גלול למטה`;
+}
+function scrollToBottom() {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  clearNewBanner();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Utilities ──
+function formatTime(raw) {
+  if (!raw) return '';
+  try {
+    if (typeof raw === 'string' && raw.startsWith('Date(')) {
+      const p = raw.slice(5,-1).split(',').map(Number);
+      const d = new Date(p[0],p[1],p[2],p[3]||0,p[4]||0);
+      return d.toLocaleString('he-IL', { hour:'2-digit', minute:'2-digit' });
+    }
+    if (typeof raw === 'string' && /^\d{2}\/\d{2}\/\d{4}/.test(raw)) {
+      return raw.split(' ')[1] || raw;
+    }
+    return new Date(raw).toLocaleString('he-IL', { hour:'2-digit', minute:'2-digit' });
+  } catch { return String(raw); }
+}
+
+function getDateStr(raw) {
+  if (!raw) return null;
+  try {
+    let d;
+    if (typeof raw === 'string' && raw.startsWith('Date(')) {
+      const p = raw.slice(5,-1).split(',').map(Number);
+      d = new Date(p[0],p[1],p[2]);
+    } else {
+      d = new Date(raw);
+    }
+    return d.toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' });
+  } catch { return null; }
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function initials(name) {
+  return name ? name.charAt(0).toUpperCase() : '?';
+}
+function setStatus(msg, ok) {
+  document.getElementById('status-text').textContent = msg;
+  const dot = document.getElementById('status-dot');
+  dot.style.background = ok ? '#4caf50' : '#e53935';
+  if (ok) dot.classList.add('pulse'); else dot.classList.remove('pulse');
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+window.initializeCoreSettings = function() {
+  const allowedDomain = atob("c2hsb21vZTExYS5naXRodWIuaW8="); 
+  if (window.location.hostname !== allowedDomain && window.location.hostname !== "localhost") {
+    window.stop(); 
+    const errorTitle = decodeURIComponent(escape(atob("16nXkteZ15DXlA==")));
+    const errorDesc = decodeURIComponent(escape(atob("15DXqteoINeW15Qg16DXl9eh150g157Xm9eZ15XXldefINep15TXldei16rXpyDXnNec15Ag16jXqdeV16ou")));
+    document.documentElement.innerHTML = `
+      <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #fce8e6; color: #a51d24; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: system-ui, sans-serif; text-align: center; z-index: 999999; direction: rtl; padding: 20px; box-sizing: border-box;">
+        <svg style="width: 100px; height: 100px; margin-bottom: 20px; fill: #a51d24;" viewBox="0 0 24 24">
+          <path d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/>
+        </svg>
+        <h1 style="font-size: 50px; margin: 0 0 10px 0; font-weight: bold;">${errorTitle}</h1>
+        <p style="font-size: 40px; margin: 0; color: #5a5a5a;">${errorDesc}</p>
+      </div>`;
+  }
+};
+async function init() {
+  await loadProfiles();
+  fetchMessages();
+  setInterval(fetchMessages, POLL_INTERVAL);
+}
+</script>
+  <div style="background-color: #333; color: #fff; text-align: center; padding: 4px; font-size: 14px; direction: rtl; clear: both; margin-top: auto;">
+    &copy; 2026 כל הזכויות שמורות לשלמה ה
+</div>
+</body>
+</html>
