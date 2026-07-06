@@ -236,11 +236,6 @@ html.access-granted #access-gate { display: none; }
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  padding: 10px 20px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
   position: sticky;
   top: 35px;
   z-index: 90;
@@ -252,6 +247,68 @@ html.access-granted #access-gate { display: none; }
   letter-spacing: .8px;
   text-transform: uppercase;
   margin-left: 4px;
+  flex-shrink: 0;
+}
+
+/* Toggle button — only shown on mobile (see media query below) */
+#filter-toggle-btn {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#filter-toggle-btn svg:first-child { color: var(--muted); flex-shrink: 0; }
+#filter-toggle-label { flex: 1; text-align: right; }
+#filter-toggle-chevron { transition: transform .2s; flex-shrink: 0; }
+#filter-bar.panel-open #filter-toggle-chevron { transform: rotate(180deg); }
+
+/* Panel — holds label, search box and chips */
+#filter-panel {
+  padding: 10px 20px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+#filter-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--signature-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: border-color .15s, box-shadow .15s;
+}
+#filter-search-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+#filter-search {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--text);
+  width: 100px;
+}
+#filter-search::placeholder { color: var(--muted); }
+#filter-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 .filter-chip {
   padding: 5px 15px;
@@ -274,23 +331,57 @@ html.access-granted #access-gate { display: none; }
   border-color: var(--accent);
   box-shadow: 0 2px 8px var(--accent-glow);
 }
-.filter-chip-video {
+.filter-chip-video,
+.filter-chip-image {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border-color: #fca5a5;
-  color: #dc2626;
+  border-color: #b9cdf5;
+  color: var(--accent);
 }
-.filter-chip-video:hover {
-  background: #fff1f1;
-  border-color: #f87171;
-  color: #dc2626;
+.filter-chip-video:hover,
+.filter-chip-image:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
-.filter-chip-video.active {
-  background: #dc2626;
+.filter-chip-video.active,
+.filter-chip-image.active {
+  background: var(--accent);
   color: #fff;
-  border-color: #dc2626;
-  box-shadow: 0 2px 8px rgba(220,38,38,.25);
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* ── FILTER BAR — mobile: collapsible panel opened by tap ── */
+@media (max-width: 640px) {
+  #filter-toggle-btn { display: flex; }
+  #filter-panel {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(13,13,40,.14);
+    max-height: 65vh;
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #filter-panel.open { display: flex; }
+  #filter-search-wrap { width: 100%; }
+  #filter-search { width: 100%; }
+}
+@media (min-width: 641px) {
+  #filter-toggle-btn { display: none; }
+  #filter-panel { display: flex !important; }
+  /* #filter-chips must not be its own flex box, or it wraps as one solid unit
+     once there are enough channels — instead its buttons become direct flex
+     items of #filter-panel so everything (label, search, every chip) reflows
+     together, line by line, in natural order. */
+  #filter-chips { display: contents; }
 }
 
 /* ── FEED ── */
@@ -352,10 +443,10 @@ html.access-granted #access-gate { display: none; }
   display: block;
 }
 .msg-avatar-col .avatar-placeholder {
-  background: linear-gradient(145deg, #0052e0, #003db0);
+  background: var(--accent);
   color: #fff;
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 30px;
+  font-weight: 600;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
   letter-spacing: -.5px;
@@ -440,8 +531,12 @@ html.access-granted #access-gate { display: none; }
 }
 
 /* Image */
-.msg-image {
+.msg-image-wrap {
+  position: relative;
   margin-top: 10px;
+  display: block;
+}
+.msg-image {
   border-radius: 10px;
   max-width: 100%;
   max-height: 340px;
@@ -513,7 +608,8 @@ html.access-granted #access-gate { display: none; }
   white-space: nowrap;
   z-index: 2;
 }
-.msg-drive-video:hover .msg-drive-open { opacity: 1; }
+.msg-drive-video:hover .msg-drive-open,
+.msg-image-wrap:hover .msg-drive-open { opacity: 1; }
 
 /* Telegram link */
 .msg-tg-link {
@@ -749,12 +845,29 @@ html.access-granted #access-gate { display: none; }
 </div>
 
 <div id="filter-bar">
-  <span id="filter-bar-label">ערוץ</span>
-  <button class="filter-chip active" data-channel="all" onclick="filterChannel('all', this)">הכל</button>
-  <button class="filter-chip filter-chip-video" data-channel="__video__" onclick="filterChannel('__video__', this)">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-1px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    וידאו
+  <button id="filter-toggle-btn" type="button" onclick="toggleFilterPanel()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+    <span id="filter-toggle-label">הכל</span>
+    <svg id="filter-toggle-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
   </button>
+  <div id="filter-panel">
+    <span id="filter-bar-label">ערוץ</span>
+    <div id="filter-search-wrap">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="filter-search" type="text" placeholder="חיפוש ערוץ..." oninput="onFilterSearch(this.value)" autocomplete="off">
+    </div>
+    <div id="filter-chips">
+      <button class="filter-chip active" data-channel="all" onclick="filterChannel('all', this)">הכל</button>
+      <button class="filter-chip filter-chip-video" data-channel="__video__" onclick="filterChannel('__video__', this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-1px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        וידאו
+      </button>
+      <button class="filter-chip filter-chip-image" data-channel="__image__" onclick="filterChannel('__image__', this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" style="display:inline-block;vertical-align:-1px"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        תמונות
+      </button>
+    </div>
+  </div>
 </div>
 
 <div id="feed">
@@ -838,6 +951,21 @@ function loadProfiles() {
   });
 }
 
+// ── Dedup identical messages (same channel + same content) ──
+// Some pipelines / sheets end up with the exact same update logged more than once.
+// We keep only the first occurrence of every unique (channel + text + image + drive) combo.
+function dedupeMessages(msgs) {
+  const seen = new Set();
+  const result = [];
+  msgs.forEach(m => {
+    const key = (m.channel || '') + '\u0001' + (m.text || '') + '\u0001' + (m.imageUrl || '') + '\u0001' + (m.driveUrl || '');
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(m);
+  });
+  return result;
+}
+
 // ── Fetch ──
 function fetchMessages() {
   const old = document.getElementById('_gviz_messages');
@@ -855,11 +983,13 @@ function fetchMessages() {
         tgUrl:    row.c[6]?.v || '',
       })).filter(m => m.text || m.imageUrl || m.driveUrl);
 
-      const newCount = msgs.length;
+      const msgsDeduped = dedupeMessages(msgs);
+
+      const newCount = msgsDeduped.length;
       const newMsgCount = newCount - lastMessageCount;
       const hadNew = newMsgCount > 0 && !firstLoad;
 
-      allMessages = msgs;
+      allMessages = msgsDeduped;
       updateFilterBar();
 
       if (firstLoad) {
@@ -933,7 +1063,7 @@ function appendNewMessages(count) {
 
 // ── Filter ──
 function updateFilterBar() {
-  const bar = document.getElementById('filter-bar');
+  const bar = document.getElementById('filter-chips');
   const channels = [...new Set(allMessages.map(m => m.channel).filter(Boolean))];
   const existing = new Set([...bar.querySelectorAll('.filter-chip')].map(b => b.dataset.channel));
   channels.forEach(ch => {
@@ -952,6 +1082,50 @@ function filterChannel(channel, btn) {
   document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderFeed(true);
+
+  const label = document.getElementById('filter-toggle-label');
+  if (label) {
+    label.textContent = channel === 'all' ? 'הכל' : (channel === '__video__' ? 'וידאו' : (channel === '__image__' ? 'תמונות' : channel));
+  }
+
+  // On mobile: selecting a channel closes the dropdown panel and resets the search box
+  closeFilterPanel();
+  const search = document.getElementById('filter-search');
+  if (search && search.value) {
+    search.value = '';
+    onFilterSearch('');
+  }
+}
+
+// ── Mobile filter panel (opens on tap instead of permanently covering the screen) ──
+function toggleFilterPanel() {
+  const panel = document.getElementById('filter-panel');
+  const barEl = document.getElementById('filter-bar');
+  const isOpen = panel.classList.toggle('open');
+  barEl.classList.toggle('panel-open', isOpen);
+}
+function closeFilterPanel() {
+  const panel = document.getElementById('filter-panel');
+  const barEl = document.getElementById('filter-bar');
+  panel.classList.remove('open');
+  barEl.classList.remove('panel-open');
+}
+document.addEventListener('click', (e) => {
+  const barEl = document.getElementById('filter-bar');
+  if (barEl && barEl.classList.contains('panel-open') && !barEl.contains(e.target)) {
+    closeFilterPanel();
+  }
+});
+
+// ── Live channel search inside the filter panel (updates as you type, no Enter needed) ──
+function onFilterSearch(query) {
+  const q = query.trim().toLowerCase();
+  document.querySelectorAll('#filter-chips .filter-chip').forEach(btn => {
+    const isPinned = btn.dataset.channel === 'all' || btn.dataset.channel === '__video__' || btn.dataset.channel === '__image__';
+    if (!q || isPinned) { btn.style.display = ''; return; }
+    const name = (btn.textContent || '').trim().toLowerCase();
+    btn.style.display = name.includes(q) ? '' : 'none';
+  });
 }
 
 // ── Signature detection (frequency-based) ──
@@ -1018,17 +1192,39 @@ function stripChannelSig(text, channel) {
   return text;
 }
 
+// Some source messages contain literal HTML-entity sequences (e.g. "&#33;" instead of "!").
+// Decoded here, per message, at the moment each card is actually built — not as a separate
+// bulk pass over every message before the feed renders — so it never delays the first paint.
+const ENTITY_MAP = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+function decodeEntities(text) {
+  if (!text || text.indexOf('&') === -1) return text;
+  return text.replace(/&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, ref) => {
+    if (ref[0] === '#') {
+      const code = ref[1] === 'x' || ref[1] === 'X'
+        ? parseInt(ref.slice(2), 16)
+        : parseInt(ref.slice(1), 10);
+      return Number.isNaN(code) ? match : String.fromCodePoint(code);
+    }
+    return Object.prototype.hasOwnProperty.call(ENTITY_MAP, ref) ? ENTITY_MAP[ref] : match;
+  });
+}
+
 // ── Drive video embed ──
-function getDriveEmbedUrl(url) {
+function getDriveFileId(url) {
   if (!url) return null;
-  let id = null;
   const m1 = url.match(/\/file\/d\/([^/?#&]+)/);
-  if (m1) id = m1[1];
-  if (!id) {
-    const m2 = url.match(/[?&]id=([^&]+)/);
-    if (m2) id = m2[1];
-  }
+  if (m1) return m1[1];
+  const m2 = url.match(/[?&]id=([^&]+)/);
+  if (m2) return m2[1];
+  return null;
+}
+function getDriveEmbedUrl(url) {
+  const id = getDriveFileId(url);
   return id ? `https://drive.google.com/file/d/${id}/preview` : null;
+}
+function getDriveDownloadUrl(url) {
+  const id = getDriveFileId(url);
+  return id ? `https://drive.google.com/uc?export=download&id=${id}` : null;
 }
 
 // ── Render (paginated, newest-last, loads more on scroll up) ──
@@ -1040,6 +1236,7 @@ let videoObserver = null;
 function getFilteredMsgs() {
   if (activeChannel === 'all') return allMessages;
   if (activeChannel === '__video__') return allMessages.filter(m => m.driveUrl);
+  if (activeChannel === '__image__') return allMessages.filter(m => m.imageUrl);
   return allMessages.filter(m => m.channel === activeChannel);
 }
 
@@ -1061,23 +1258,31 @@ function buildCard(msgs, idx) {
     smallAvatarHtml = `<div class="avatar-placeholder">${initials(m.channel)}</div>`;
   }
 
-  const mainText = stripChannelSig(m.text, m.channel);
+  const mainText = decodeEntities(stripChannelSig(m.text, m.channel));
 
   let bubbleHtml = '';
   if (mainText) bubbleHtml += `<div class="msg-text">${esc(mainText)}</div>`;
 
   if (m.imageUrl) {
-    bubbleHtml += `<img class="msg-image" src="${esc(m.imageUrl)}" alt="תמונה" loading="lazy" onclick="openLightbox(this.src)">`;
+    bubbleHtml += `<div class="msg-image-wrap">
+      <img class="msg-image" src="${esc(m.imageUrl)}" alt="תמונה" loading="lazy" onclick="openLightbox(this.src)">
+      <a class="msg-drive-open" href="${esc(m.imageUrl)}" target="_blank" rel="noopener" title="הורדת תמונה"
+         onclick="event.preventDefault(); event.stopPropagation(); forceDownload('${esc(m.imageUrl)}');">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        הורד
+      </a>
+    </div>`;
   }
 
   if (m.driveUrl) {
     const embedUrl = getDriveEmbedUrl(m.driveUrl);
     if (embedUrl) {
+      const downloadUrl = getDriveDownloadUrl(m.driveUrl) || m.driveUrl;
       bubbleHtml += `<div class="msg-drive-video">
         <iframe data-src="${esc(embedUrl)}" allowfullscreen allow="autoplay"></iframe>
-        <a class="msg-drive-open" href="${esc(m.driveUrl)}" target="_blank" rel="noopener">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          פתח בדרייב
+        <a class="msg-drive-open" href="${esc(downloadUrl)}" target="_blank" rel="noopener" title="הורדת הסרטון">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          הורד
         </a>
       </div>`;
     } else {
@@ -1123,7 +1328,7 @@ function buildCard(msgs, idx) {
   const ctBtn = card.querySelector('.copy-text-btn');
   if (ctBtn) {
     ctBtn.addEventListener('click', function() {
-      copyText(this, msgs[parseInt(this.dataset.idx)]?.text || '');
+      copyText(this, decodeEntities(msgs[parseInt(this.dataset.idx)]?.text || ''));
     });
   }
 
@@ -1484,6 +1689,29 @@ function setStatus(msg, ok) {
   const dot = document.getElementById('status-dot');
   dot.style.background = ok ? '#4caf50' : '#e53935';
   if (ok) dot.classList.add('pulse'); else dot.classList.remove('pulse');
+}
+
+// Forces an actual download instead of letting the browser just open the file in a new tab
+// (the `download` attribute is ignored by browsers for cross-origin links, which is why
+// images were opening instead of downloading). We fetch the bytes ourselves and save them
+// as a blob; if the host blocks cross-origin fetch (no CORS headers), we fall back to simply
+// opening the file — that's the most we can do without a server-side proxy.
+async function forceDownload(url) {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error('bad status ' + res.status);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+  } catch (e) {
+    window.open(url, '_blank', 'noopener');
+  }
 }
 
 function openLightbox(src) {
